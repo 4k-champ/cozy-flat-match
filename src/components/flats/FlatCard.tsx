@@ -21,6 +21,7 @@ import { Flat } from '@/types/flatfit';
 import { auth } from '@/lib/auth';
 import { LoginModal } from '@/components/auth/LoginModal';
 import { useToast } from '@/hooks/use-toast';
+import { useWishlist } from '@/hooks/useWishlist';
 
 const amenityIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   'WiFi': Wifi,
@@ -41,8 +42,8 @@ interface FlatCardProps {
 
 export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'grid' }: FlatCardProps) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
   const { toast } = useToast();
+  const { isInWishlist, toggleWishlist, loading } = useWishlist();
 
   const handleChat = () => {
     if (!auth.isAuthenticated()) {
@@ -58,11 +59,7 @@ export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'gri
   };
 
   const handleLike = () => {
-    setIsLiked(!isLiked);
-    toast({
-      title: isLiked ? 'Removed from favorites' : 'Added to favorites',
-      description: isLiked ? 'Flat removed from your favorites' : 'Flat saved to your favorites',
-    });
+    toggleWishlist(flat.id);
   };
 
   const getGenderIcon = (gender: string) => {
@@ -94,9 +91,6 @@ export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'gri
                     {matchPercentage}% match
                   </Badge>
                 )}
-                <div className="absolute top-2 left-2 text-lg">
-                  {getGenderIcon(flat.genderPreference)}
-                </div>
               </div>
 
               {/* Content */}
@@ -109,7 +103,7 @@ export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'gri
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 mb-3">
                   <div className="text-2xl font-bold text-primary">
                     ₹{flat.monthlyRent.toLocaleString()}
                     <span className="text-sm font-normal text-muted-foreground">/month</span>
@@ -117,6 +111,15 @@ export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'gri
                   <Badge variant="outline">
                     {flat.roomType.toLowerCase()}
                   </Badge>
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    {getGenderIcon(flat.genderPreference)}
+                    <span>{flat.genderPreference === 'ANY' ? 'Any gender' : flat.genderPreference.toLowerCase()}</span>
+                  </Badge>
+                  {matchPercentage && (
+                    <Badge className="bg-accent text-accent-foreground">
+                      {matchPercentage}% match
+                    </Badge>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -157,7 +160,7 @@ export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'gri
                         handleLike();
                       }}
                     >
-                      <Heart className={`h-4 w-4 ${isLiked ? 'fill-destructive text-destructive' : ''}`} />
+                      <Heart className={`h-4 w-4 ${isInWishlist(flat.id) ? 'fill-destructive text-destructive' : ''}`} />
                     </Button>
                     <Button
                       variant="outline"
@@ -202,23 +205,20 @@ export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'gri
               {matchPercentage}% match
             </Badge>
           )}
-          <div className="absolute top-3 left-3 text-xl">
-            {getGenderIcon(flat.genderPreference)}
-          </div>
           <Button
             variant="ghost"
             size="sm"
-            className="absolute top-3 right-12 bg-background/80 hover:bg-background"
+            className="absolute top-3 right-3 bg-background/80 hover:bg-background"
             onClick={(e) => {
               e.stopPropagation();
               handleLike();
             }}
           >
-            <Heart className={`h-4 w-4 ${isLiked ? 'fill-destructive text-destructive' : ''}`} />
+            <Heart className={`h-4 w-4 ${isInWishlist(flat.id) ? 'fill-destructive text-destructive' : ''}`} />
           </Button>
         </div>
 
-        <CardContent className="p-4 space-y-3" onClick={onViewDetails}>
+        <CardContent className="p-3 md:p-4 space-y-3" onClick={onViewDetails}>
           {/* Location */}
           <div>
             <h3 className="font-semibold text-foreground line-clamp-1">{flat.address}</h3>
@@ -228,8 +228,8 @@ export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'gri
             </div>
           </div>
 
-          {/* Price */}
-          <div className="flex items-center gap-2">
+          {/* Price and badges */}
+          <div className="flex items-center gap-2 mb-2">
             <div className="text-xl font-bold text-primary">
               ₹{flat.monthlyRent.toLocaleString()}
               <span className="text-sm font-normal text-muted-foreground">/mo</span>
@@ -237,6 +237,19 @@ export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'gri
             <Badge variant="outline" className="text-xs">
               {flat.roomType.toLowerCase()}
             </Badge>
+          </div>
+
+          {/* Gender and match badges */}
+          <div className="flex items-center gap-2 mb-3">
+            <Badge variant="secondary" className="text-xs flex items-center gap-1">
+              <span>{getGenderIcon(flat.genderPreference)}</span>
+              <span>{flat.genderPreference === 'ANY' ? 'Any' : flat.genderPreference.toLowerCase()}</span>
+            </Badge>
+            {matchPercentage && (
+              <Badge className="bg-accent text-accent-foreground text-xs">
+                {matchPercentage}% match
+              </Badge>
+            )}
           </div>
 
           {/* Amenities */}

@@ -26,7 +26,7 @@ const profileSchema = z.object({
   gender: z.string().min(1, 'Please select your gender'),
   city: z.string().min(1, 'Please select your city'),
   occupation: z.string().min(2, 'Please enter your occupation'),
-  budget: z.number().min(1000, 'Budget must be at least ₹1,000'),
+  budget: z.string().min(1, 'Please enter your budget'),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -35,6 +35,24 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPersonalityModal, setShowPersonalityModal] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [cities, setCities] = useState<string[]>(INDIAN_CITIES);
+
+  useEffect(() => {
+    // Fetch cities from API
+    const fetchCities = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/flatFit-v1/cities/list');
+        if (response.ok) {
+          const cityList = await response.json();
+          setCities(cityList);
+        }
+      } catch (error) {
+        // Fallback to static list if API fails
+        console.error('Failed to fetch cities, using static list');
+      }
+    };
+    fetchCities();
+  }, []);
   const { toast } = useToast();
 
   const form = useForm<ProfileFormData>({
@@ -44,7 +62,7 @@ const Profile = () => {
       gender: '',
       city: '',
       occupation: '',
-      budget: 15000,
+      budget: '15000',
     },
   });
 
@@ -60,7 +78,7 @@ const Profile = () => {
             gender: data.gender || '',
             city: data.city || '',
             occupation: data.occupation || '',
-            budget: data.budget || 15000,
+            budget: data.budget || '15000',
           });
         }
       } catch (error) {
@@ -76,12 +94,22 @@ const Profile = () => {
   const onSubmit = async (data: ProfileFormData) => {
     setIsLoading(true);
     try {
-      // Note: The API spec doesn't include a profile update endpoint
-      // This would need to be implemented on the backend
-      toast({
-        title: 'Profile updated!',
-        description: 'Your profile information has been saved successfully.',
+      const response = await auth.fetchWithAuth('/auth/updateProfile', {
+        method: 'PUT',
+        body: JSON.stringify(data),
       });
+      
+      if (response.ok) {
+        const updatedUser = await response.json();
+        auth.setUser(updatedUser);
+        setUserProfile(updatedUser);
+        toast({
+          title: 'Profile updated!',
+          description: 'Your profile information has been saved successfully.',
+        });
+      } else {
+        throw new Error('Update failed');
+      }
     } catch (error) {
       toast({
         title: 'Update failed',
@@ -176,7 +204,7 @@ const Profile = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="max-h-48">
-                          {INDIAN_CITIES.map((city) => (
+                          {cities.map((city) => (
                             <SelectItem key={city} value={city}>
                               {city}
                             </SelectItem>
@@ -211,9 +239,8 @@ const Profile = () => {
                         <FormControl>
                           <Input 
                             {...field} 
-                            type="number" 
+                            type="text" 
                             placeholder="15000"
-                            onChange={(e) => field.onChange(Number(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />

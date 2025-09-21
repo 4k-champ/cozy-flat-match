@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { User, LogOut, Settings, Home } from 'lucide-react';
+import { User, LogOut, Settings, Home, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -67,6 +67,12 @@ export const Header = () => {
                     <Link to="/me" className="cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
                       Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-favs" className="cursor-pointer">
+                      <Heart className="mr-2 h-4 w-4" />
+                      My Favs
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -48,6 +48,24 @@ interface FlatFiltersProps {
 
 export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
   const [priceRange, setPriceRange] = useState([5000, 50000]);
+  const [cities, setCities] = useState<string[]>(INDIAN_CITIES);
+  
+  useEffect(() => {
+    // Fetch cities from API
+    const fetchCities = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/flatFit-v1/cities/list');
+        if (response.ok) {
+          const cityList = await response.json();
+          setCities(cityList);
+        }
+      } catch (error) {
+        // Fallback to static list if API fails
+        console.error('Failed to fetch cities, using static list');
+      }
+    };
+    fetchCities();
+  }, []);
   
   const form = useForm<FilterFormData>({
     resolver: zodResolver(filterSchema),
@@ -120,7 +138,7 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="max-h-48">
-                      {INDIAN_CITIES.map((city) => (
+                      {cities.map((city) => (
                         <SelectItem key={city} value={city}>
                           {city}
                         </SelectItem>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,7 @@ import { Flat } from '@/types/flatfit';
 import { auth } from '@/lib/auth';
 import { LoginModal } from '@/components/auth/LoginModal';
 import { useToast } from '@/hooks/use-toast';
+import { useWishlist } from '@/hooks/useWishlist';
 
 const amenityIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   'WiFi': Wifi,
@@ -50,14 +51,41 @@ interface FlatDetailsModalProps {
 export const FlatDetailsModal = ({ flat, open, onOpenChange }: FlatDetailsModalProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
+  const [flatPersonality, setFlatPersonality] = useState<any>(null);
+  const [loadingPersonality, setLoadingPersonality] = useState(true);
   const { toast } = useToast();
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
   const images = flat.imageUrls.length > 0 ? flat.imageUrls : [
     'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600',
     'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600',
     'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600',
   ];
+
+  useEffect(() => {
+    if (open && flat.id) {
+      fetchFlatPersonality();
+    }
+  }, [open, flat.id]);
+
+  const fetchFlatPersonality = async () => {
+    setLoadingPersonality(true);
+    try {
+      const response = await fetch(`http://localhost:8080/flatFit-v1/personalityProfile/fetchFlatPersonality/${flat.id}`, {
+        headers: {
+          'Authorization': `Bearer ${auth.getToken()}`,
+        },
+      });
+      if (response.ok) {
+        const personality = await response.json();
+        setFlatPersonality(personality);
+      }
+    } catch (error) {
+      console.error('Failed to fetch flat personality:', error);
+    } finally {
+      setLoadingPersonality(false);
+    }
+  };
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
@@ -101,11 +129,7 @@ export const FlatDetailsModal = ({ flat, open, onOpenChange }: FlatDetailsModalP
   };
 
   const handleLike = () => {
-    setIsLiked(!isLiked);
-    toast({
-      title: isLiked ? 'Removed from favorites' : 'Added to favorites',
-      description: isLiked ? 'Flat removed from your favorites' : 'Flat saved to your favorites',
-    });
+    toggleWishlist(flat.id);
   };
 
   const getGenderIcon = (gender: string) => {
@@ -173,7 +197,7 @@ export const FlatDetailsModal = ({ flat, open, onOpenChange }: FlatDetailsModalP
                   className="absolute top-3 right-3 bg-background/80 hover:bg-background"
                   onClick={handleLike}
                 >
-                  <Heart className={`h-4 w-4 ${isLiked ? 'fill-destructive text-destructive' : ''}`} />
+                  <Heart className={`h-4 w-4 ${isInWishlist(flat.id) ? 'fill-destructive text-destructive' : ''}`} />
                 </Button>
               </div>
 
@@ -263,27 +287,53 @@ export const FlatDetailsModal = ({ flat, open, onOpenChange }: FlatDetailsModalP
                 </div>
               </div>
 
-              {/* Mock Lifestyle Preferences */}
+              {/* Lifestyle Preferences */}
               <div>
                 <h3 className="font-semibold mb-3">Lifestyle Preferences</h3>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    {getLifestyleIcon(true)}
-                    <span>Guests allowed</span>
+                {loadingPersonality ? (
+                  <div className="text-sm text-muted-foreground">Loading preferences...</div>
+                ) : flatPersonality ? (
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      {getLifestyleIcon(flatPersonality.guestsAllowed)}
+                      <span>Guests allowed</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {getLifestyleIcon(flatPersonality.smokingAllowed)}
+                      <span>Smoking</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {getLifestyleIcon(flatPersonality.petAllowed)}
+                      <span>Pets</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {getLifestyleIcon(flatPersonality.alcoholAllowed)}
+                      <span>Alcohol</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {getLifestyleIcon(!flatPersonality.nonVegFoodAllowed)}
+                      <span>Non-veg food</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {getLifestyleIcon(flatPersonality.lateNightPartyAllowed)}
+                      <span>Late night parties</span>
+                    </div>
+                    {flatPersonality.sleepSchedule && (
+                      <div className="col-span-2 flex items-center gap-2">
+                        <span className="font-medium">Sleep schedule:</span>
+                        <span>{flatPersonality.sleepSchedule.replace('_', ' ').toLowerCase()}</span>
+                      </div>
+                    )}
+                    {flatPersonality.cleanliness && (
+                      <div className="col-span-2 flex items-center gap-2">
+                        <span className="font-medium">Cleanliness:</span>
+                        <span>{flatPersonality.cleanliness.replace('_', ' ').toLowerCase()}</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    {getLifestyleIcon(false)}
-                    <span>Smoking</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {getLifestyleIcon(false)}
-                    <span>Pets</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {getLifestyleIcon(true)}
-                    <span>Late night parties</span>
-                  </div>
-                </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">No lifestyle preferences available</div>
+                )}
               </div>
 
               {/* Action Buttons */}

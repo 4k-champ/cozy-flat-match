@@ -10,6 +10,8 @@ import Profile from "./pages/Profile";
 import Flats from "./pages/Flats";
 import ListNewFlat from "./pages/ListNewFlat";
 import PersonalityTest from "./pages/PersonalityTest";
+import MyFavs from "./pages/MyFavs";
+import MyFlats from "./pages/MyFlats";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +31,8 @@ const App = () => (
               <Route path="/flats" element={<Flats />} />
               <Route path="/list-new-flat" element={<ListNewFlat />} />
               <Route path="/personality-test" element={<PersonalityTest />} />
+              <Route path="/my-favs" element={<MyFavs />} />
+              <Route path="/my-flats" element={<MyFlats />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
