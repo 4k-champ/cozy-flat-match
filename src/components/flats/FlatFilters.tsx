@@ -52,7 +52,7 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
   const form = useForm<FilterFormData>({
     resolver: zodResolver(filterSchema),
     defaultValues: {
-      city: selectedCity || '',
+      city: selectedCity || undefined,
       minRent: 5000,
       maxRent: 50000,
     },
@@ -77,7 +77,7 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
 
   const clearFilters = () => {
     form.reset({
-      city: selectedCity || '',
+      city: selectedCity || undefined,
       minRent: 5000,
       maxRent: 50000,
     });
@@ -87,7 +87,7 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
   const hasActiveFilters = () => {
     const values = form.getValues();
     return Object.values(values).some(value => 
-      value !== undefined && value !== '' && value !== false
+      value !== undefined && value !== false
     ) || priceRange[0] !== 5000 || priceRange[1] !== 50000;
   };
 
@@ -120,7 +120,6 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="max-h-48">
-                      <SelectItem value="">Any city</SelectItem>
                       {INDIAN_CITIES.map((city) => (
                         <SelectItem key={city} value={city}>
                           {city}
@@ -174,7 +173,6 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Any schedule</SelectItem>
                     {SLEEP_SCHEDULE_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
@@ -200,7 +198,6 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Any level</SelectItem>
                     {CLEANLINESS_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
@@ -226,7 +223,6 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Any preference</SelectItem>
                     {CHORES_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
