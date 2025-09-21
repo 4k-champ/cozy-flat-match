@@ -33,7 +33,7 @@ const Flats = () => {
   const fetchFlats = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8080/flatFit-v1/flat/fetchFlats');
+      const response = await auth.fetchWithAuth('/flat/fetchFlats');
       if (response.ok) {
         const data: Flat[] = await response.json();
         let filteredData = data;
@@ -138,9 +138,8 @@ const Flats = () => {
   const handleFilterSearch = async (filters: FilterCriteria) => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8080/flatFit-v1/flat/filter-search', {
+      const response = await auth.fetchWithAuth('/flat/filter-search', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(filters),
       });
       
