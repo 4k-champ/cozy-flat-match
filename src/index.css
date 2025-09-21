@@ -2,41 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* FlatFit Design System - Cozy + Modern Theme */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    /* FlatFit Color Palette - Cozy + Modern */
+    --primary: 273 16% 42%;           /* Warm Lavender #6C5B7B */
+    --primary-foreground: 0 0% 100%;
+    
+    --primary-accent: 337 42% 58%;    /* Soft Pink #C06C84 */
+    --primary-accent-foreground: 0 0% 100%;
+    
+    --secondary: 351 86% 73%;         /* Peach #F67280 */
+    --secondary-foreground: 0 0% 100%;
+    
+    --accent: 163 95% 43%;            /* Bright Teal #06D6A0 */
+    --accent-foreground: 0 0% 100%;
+    
+    --background: 0 46% 93%;          /* Off-white Warm #F8E9E9 */
+    --foreground: 210 29% 24%;        /* Dark Slate #2C3E50 */
+    
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 210 29% 24%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 210 29% 24%;
+    
+    --muted: 240 25% 96%;             /* Light Gray #F2F2F6 */
+    --muted-foreground: 215 16% 47%;  /* Slate Gray #6B7280 */
+    
+    --destructive: 354 70% 54%;       /* Danger #E63946 */
+    --destructive-foreground: 0 0% 100%;
+    
+    --info: 204 64% 44%;              /* Info Blue #2980B9 */
+    --info-foreground: 0 0% 100%;
+    
+    --border: 0 46% 88%;
+    --input: 0 46% 88%;
+    --ring: 273 16% 42%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
+    --radius: 0.75rem;                /* 12px default radius */
+    --radius-sm: 0.625rem;            /* 10px for buttons */
+    
+    /* Custom gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(273 16% 42%), hsl(337 42% 58%));
+    --gradient-warm: linear-gradient(135deg, hsl(337 42% 58%), hsl(351 86% 73%));
+    --gradient-hero: linear-gradient(135deg, hsl(273 16% 42%) 0%, hsl(337 42% 58%) 50%, hsl(351 86% 73%) 100%);
+    
+    /* Shadows */
+    --shadow-soft: 0 6px 18px hsl(210 29% 24% / 0.08);
+    --shadow-card: 0 4px 12px hsl(210 29% 24% / 0.06);
+    --shadow-button: 0 2px 8px hsl(273 16% 42% / 0.2);
+    
+    /* Animation */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     --sidebar-background: 0 0% 98%;
 
@@ -101,5 +121,81 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+  
+  h1 {
+    @apply text-4xl lg:text-5xl;
+  }
+  
+  h2 {
+    @apply text-3xl lg:text-4xl;
+  }
+  
+  h3 {
+    @apply text-xl lg:text-2xl;
+  }
+}
+
+@layer components {
+  /* Gradient backgrounds */
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .bg-gradient-warm {
+    background: var(--gradient-warm);
+  }
+  
+  .bg-gradient-hero {
+    background: var(--gradient-hero);
+  }
+  
+  /* Shadow utilities */
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  
+  .shadow-button {
+    box-shadow: var(--shadow-button);
+  }
+  
+  /* Smooth transitions */
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  /* Glass effect for modals */
+  .glass {
+    backdrop-filter: blur(10px);
+    background: hsl(0 0% 100% / 0.8);
+    border: 1px solid hsl(0 0% 100% / 0.2);
+  }
+  
+  /* Custom scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground)) transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground));
+    border-radius: 3px;
   }
 }
