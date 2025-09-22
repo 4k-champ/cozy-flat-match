@@ -200,11 +200,6 @@ export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'gri
             className="w-full h-full object-cover group-hover:scale-105 transition-smooth"
             onClick={onViewDetails}
           />
-          {matchPercentage && (
-            <Badge className="absolute top-3 right-3 bg-accent text-accent-foreground">
-              {matchPercentage}% match
-            </Badge>
-          )}
           <Button
             variant="ghost"
             size="sm"

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FlatCard } from '@/components/flats/FlatCard';
+import { FlatCardSkeleton } from '@/components/layout/FlatCardSkeleton';
 import { FlatDetailsModal } from '@/components/flats/FlatDetailsModal';
 import { Flat } from '@/types/flatfit';
 import { auth } from '@/lib/auth';
@@ -52,8 +53,18 @@ const MyFavs = () => {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin" />
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center justify-center gap-2">
+            <Heart className="h-8 w-8 text-destructive" />
+            My Favorite Flats
+          </h1>
+          <p className="text-muted-foreground">Loading your favorite flats...</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <FlatCardSkeleton key={i} />
+          ))}
         </div>
       </div>
     );

@@ -41,7 +41,7 @@ const Profile = () => {
     // Fetch cities from API
     const fetchCities = async () => {
       try {
-        const response = await fetch('http://localhost:8080/flatFit-v1/cities/list');
+        const response = await auth.fetchWithAuth('/cities/list');
         if (response.ok) {
           const cityList = await response.json();
           setCities(cityList);
@@ -178,11 +178,8 @@ const Profile = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {GENDER_OPTIONS.slice(0, 2).map((option) => (
-                              <SelectItem key={option.value} value={option.value.toLowerCase()}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
+                            <SelectItem value="male">Male</SelectItem>
+                            <SelectItem value="female">Female</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { FlatCard } from '@/components/flats/FlatCard';
 import { FlatFilters } from '@/components/flats/FlatFilters';
 import { FlatDetailsModal } from '@/components/flats/FlatDetailsModal';
+import { FlatCardSkeleton } from '@/components/layout/FlatCardSkeleton';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/auth';
 import { Flat, FlatWithMatch, FilterCriteria } from '@/types/flatfit';
@@ -249,9 +250,9 @@ const Flats = () => {
 
             {/* Results */}
             {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="h-80 bg-muted animate-pulse rounded-lg" />
+                  <FlatCardSkeleton key={i} viewMode={viewMode} />
                 ))}
               </div>
             ) : displayFlats.length === 0 ? (

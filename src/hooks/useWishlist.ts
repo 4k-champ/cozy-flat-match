@@ -1,27 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { auth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
 export const useWishlist = () => {
   const [wishlistIds, setWishlistIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
+  const hasFetched = useRef(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (auth.isAuthenticated()) {
+    if (auth.isAuthenticated() && !hasFetched.current) {
       fetchWishlist();
     }
   }, []);
 
   const fetchWishlist = async () => {
+    if (hasFetched.current) return;
+    
     try {
-      const response = await auth.fetchWithAuth('/my-wishlist-flats');
+      hasFetched.current = true;
+      const response = await auth.fetchWithAuth('/wishlist/my-wishlist-flats');
       if (response.ok) {
         const flats: { id: number }[] = await response.json();
         const ids = new Set(flats.map(flat => flat.id));
         setWishlistIds(ids);
       }
     } catch (error) {
+      hasFetched.current = false; // Reset on error to allow retry
       // Silent fail for initial fetch
     }
   };

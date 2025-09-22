@@ -23,6 +23,7 @@ import {
   INDIAN_CITIES 
 } from '@/types/flatfit';
 import { X } from 'lucide-react';
+import { auth } from '@/lib/auth';
 
 const filterSchema = z.object({
   sleepSchedule: z.enum(['LATE_NIGHT', 'EARLY_TO_BED', 'FLEXIBLE']).optional(),
@@ -54,7 +55,7 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
     // Fetch cities from API
     const fetchCities = async () => {
       try {
-        const response = await fetch('http://localhost:8080/flatFit-v1/cities/list');
+        const response = await auth.fetchWithAuth('/cities/list');
         if (response.ok) {
           const cityList = await response.json();
           setCities(cityList);

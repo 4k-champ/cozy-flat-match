@@ -27,6 +27,8 @@ import { Flat } from '@/types/flatfit';
 import { auth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { FlatDetailsModal } from '@/components/flats/FlatDetailsModal';
+import { FlatCard } from '@/components/flats/FlatCard';
+import { FlatCardSkeleton } from '@/components/layout/FlatCardSkeleton';
 
 const MyFlats = () => {
   const [flats, setFlats] = useState<Flat[]>([]);
@@ -97,8 +99,18 @@ const MyFlats = () => {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin" />
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center justify-center gap-2">
+            <Home className="h-8 w-8 text-primary" />
+            My Flats
+          </h1>
+          <p className="text-muted-foreground">Loading your posted flats...</p>
+        </div>
+        
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <FlatCardSkeleton key={i} viewMode="list" />
+          ))}
         </div>
       </div>
     );
