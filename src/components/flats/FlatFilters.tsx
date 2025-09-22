@@ -84,9 +84,10 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
       maxRent: priceRange[1],
     } as FilterCriteria;
 
-    // Remove undefined values
+    // Remove undefined values and "none" values
     Object.keys(filters).forEach(key => {
-      if (filters[key as keyof FilterCriteria] === undefined) {
+      const value = filters[key as keyof FilterCriteria];
+      if (value === undefined || value === "none") {
         delete filters[key as keyof FilterCriteria];
       }
     });
@@ -97,6 +98,15 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
   const clearFilters = () => {
     form.reset({
       city: selectedCity || undefined,
+      sleepSchedule: undefined,
+      cleanliness: undefined,
+      choresPreference: undefined,
+      guestsAllowed: undefined,
+      smokingAllowed: undefined,
+      petAllowed: undefined,
+      alcoholAllowed: undefined,
+      nonVegFoodAllowed: undefined,
+      lateNightPartyAllowed: undefined,
       minRent: 5000,
       maxRent: 50000,
     });
@@ -115,9 +125,8 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">Manual Filters</h3>
         {hasActiveFilters() && (
-          <Button variant="ghost" size="sm" onClick={clearFilters}>
-            <X className="h-4 w-4 mr-1" />
-            Clear
+          <Button variant="outline" size="sm" onClick={clearFilters} className="text-muted-foreground hover:text-foreground">
+            Clear Filters
           </Button>
         )}
       </div>
@@ -188,10 +197,11 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Any schedule" />
+                      <SelectValue placeholder="None" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
                     {SLEEP_SCHEDULE_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
@@ -213,10 +223,11 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Any level" />
+                      <SelectValue placeholder="None" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
                     {CLEANLINESS_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
@@ -238,10 +249,11 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Any preference" />
+                      <SelectValue placeholder="None" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
                     {CHORES_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}

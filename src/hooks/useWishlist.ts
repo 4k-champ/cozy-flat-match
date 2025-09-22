@@ -21,8 +21,8 @@ export const useWishlist = () => {
       hasFetched.current = true;
       const response = await auth.fetchWithAuth('/wishlist/my-wishlist-flats');
       if (response.ok) {
-        const flats: { id: number }[] = await response.json();
-        const ids = new Set(flats.map(flat => flat.id));
+        const flatIds: number[] = await response.json();
+        const ids = new Set(flatIds);
         setWishlistIds(ids);
       }
     } catch (error) {

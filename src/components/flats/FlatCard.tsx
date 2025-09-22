@@ -77,20 +77,15 @@ export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'gri
     return (
       <>
         <Card className="hover:shadow-card transition-smooth cursor-pointer" onClick={onViewDetails}>
-          <CardContent className="p-6">
-            <div className="flex gap-6">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
               {/* Image */}
-              <div className="relative w-48 h-32 flex-shrink-0">
+              <div className="relative w-full sm:w-48 h-48 sm:h-32 flex-shrink-0">
                 <img
                   src={flat.imageUrls[0] || 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400'}
                   alt="Flat"
                   className="w-full h-full object-cover rounded-lg"
                 />
-                {matchPercentage && (
-                  <Badge className="absolute top-2 right-2 bg-accent text-accent-foreground">
-                    {matchPercentage}% match
-                  </Badge>
-                )}
               </div>
 
               {/* Content */}
@@ -139,7 +134,7 @@ export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'gri
                   )}
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <Avatar className="h-6 w-6">
                       <AvatarFallback className="text-xs">
@@ -171,11 +166,11 @@ export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'gri
                       }}
                     >
                       <MessageCircle className="h-4 w-4 mr-1" />
-                      Chat
+                      <span className="hidden sm:inline">Chat</span>
                     </Button>
                     <Button variant="primary" size="sm">
                       <Eye className="h-4 w-4 mr-1" />
-                      View
+                      <span className="hidden sm:inline">View</span>
                     </Button>
                   </div>
                 </div>
