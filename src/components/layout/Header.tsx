@@ -23,7 +23,7 @@ export const Header = () => {
       // Fetch notification count
       const fetchNotificationCount = async () => {
         try {
-          const response = await auth.fetchWithAuth('/notifications/active-count');
+          const response = await auth.fetchWithAuth('/flatFit-v1/notifications/active-count');
           if (response.ok) {
             const count = await response.json();
             setNotificationCount(count);

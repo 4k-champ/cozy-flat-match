@@ -10,9 +10,9 @@ import { FlatCardSkeleton } from '@/components/layout/FlatCardSkeleton';
 interface Notification {
   id: number;
   flatTitle: string;
-  interestedUserName: string;
-  email?: string;
-  phone?: string;
+  name: string;
+  userEmail?: string;
+  userPhone?: string;
   shareContact: boolean;
   read: boolean;
   createdAt: string;
@@ -69,6 +69,28 @@ const Notifications = () => {
     }
   };
 
+  const clearAllNotifications = async () => {
+    try {
+      const response = await auth.fetchWithAuth('/notifications/deleteAll', {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setNotifications([]);
+        toast({
+          title: "Success",
+          description: "All notifications cleared",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to clear notifications",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCardClick = (notification: Notification) => {
     if (!notification.read) {
       markAsRead(notification.id);
@@ -95,9 +117,21 @@ const Notifications = () => {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Notifications</h1>
-          <Badge variant="secondary" className="text-sm">
-            {notifications.filter(n => !n.read).length} unread
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge variant="secondary" className="text-sm">
+              {notifications.filter(n => !n.read).length} unread
+            </Badge>
+            {notifications.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllNotifications}
+                className="text-sm"
+              >
+                Clear All
+              </Button>
+            )}
+          </div>
         </div>
 
         {notifications.length === 0 ? (
@@ -116,8 +150,8 @@ const Notifications = () => {
                 key={notification.id}
                 className={`cursor-pointer transition-all hover:shadow-md ${
                   !notification.read 
-                    ? 'bg-primary/5 border-primary/20 shadow-sm' 
-                    : 'opacity-75'
+                    ? 'bg-background border-primary/20 shadow-sm' 
+                    : 'bg-muted/30 opacity-70'
                 }`}
                 onClick={() => handleCardClick(notification)}
               >
@@ -129,7 +163,7 @@ const Notifications = () => {
                       </h3>
                       <p className="text-muted-foreground">
                         <span className="font-medium text-foreground">
-                          {notification.interestedUserName}
+                          {notification.name}
                         </span>
                         {" "}expressed interest in your flat
                       </p>
@@ -149,16 +183,16 @@ const Notifications = () => {
                       <h4 className="font-medium mb-2">Contact Details:</h4>
                       {notification.shareContact ? (
                         <div className="space-y-2">
-                          {notification.email && (
+                          {notification.userEmail && (
                             <div className="flex items-center gap-2 text-sm">
                               <Mail className="h-4 w-4 text-muted-foreground" />
-                              <span>{notification.email}</span>
+                              <span>{notification.userEmail}</span>
                             </div>
                           )}
-                          {notification.phone && (
+                          {notification.userPhone && (
                             <div className="flex items-center gap-2 text-sm">
                               <Phone className="h-4 w-4 text-muted-foreground" />
-                              <span>{notification.phone}</span>
+                              <span>{notification.userPhone}</span>
                             </div>
                           )}
                         </div>
