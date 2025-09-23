@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { User, LogOut, Settings, Home, Heart } from 'lucide-react';
+import { User, LogOut, Settings, Home, Heart, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -14,8 +14,27 @@ import { LoginModal } from '@/components/auth/LoginModal';
 
 export const Header = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
   const isAuthenticated = auth.isAuthenticated();
   const user = auth.getUser();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Fetch notification count
+      const fetchNotificationCount = async () => {
+        try {
+          const response = await auth.fetchWithAuth('/notifications/active-count');
+          if (response.ok) {
+            const count = await response.json();
+            setNotificationCount(count);
+          }
+        } catch (error) {
+          console.error('Failed to fetch notification count');
+        }
+      };
+      fetchNotificationCount();
+    }
+  }, [isAuthenticated]);
 
   const handleLogout = () => {
     auth.logout();
@@ -34,13 +53,17 @@ export const Header = () => {
           </Link>
 
           {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/flats" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-smooth">
-              Find Flats
-            </Link>
-            <Link to="/list-new-flat" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-smooth">
-              List a Flat
-            </Link>
+          <nav className="hidden md:flex items-center space-x-3">
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/flats" className="font-medium">
+                Find Flats
+              </Link>
+            </Button>
+            <Button variant="primary" size="sm" asChild>
+              <Link to="/list-new-flat" className="font-medium">
+                List a Flat
+              </Link>
+            </Button>
           </nav>
 
           {/* User Actions */}
@@ -54,6 +77,13 @@ export const Header = () => {
                         {user.name?.charAt(0)?.toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
+                    {notificationCount > 0 && (
+                      <div className="absolute -top-1 -right-1 h-5 w-5 bg-destructive rounded-full flex items-center justify-center">
+                        <span className="text-xs text-white font-medium">
+                          {notificationCount > 9 ? '9+' : notificationCount}
+                        </span>
+                      </div>
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -79,6 +109,17 @@ export const Header = () => {
                     <Link to="/my-flats" className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
                       My Flats
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/notifications" className="cursor-pointer">
+                      <Bell className="mr-2 h-4 w-4" />
+                      Notifications
+                      {notificationCount > 0 && (
+                        <span className="ml-auto text-xs bg-destructive text-white px-1.5 py-0.5 rounded-full">
+                          {notificationCount}
+                        </span>
+                      )}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">

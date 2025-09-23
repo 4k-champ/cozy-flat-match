@@ -29,6 +29,7 @@ import {
 import { Flat } from '@/types/flatfit';
 import { auth } from '@/lib/auth';
 import { LoginModal } from '@/components/auth/LoginModal';
+import { ExpressInterestModal } from '@/components/flats/ExpressInterestModal';
 import { useToast } from '@/hooks/use-toast';
 import { useWishlist } from '@/hooks/useWishlist';
 
@@ -51,6 +52,7 @@ interface FlatDetailsModalProps {
 export const FlatDetailsModal = ({ flat, open, onOpenChange }: FlatDetailsModalProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showExpressInterestModal, setShowExpressInterestModal] = useState(false);
   const [flatPersonality, setFlatPersonality] = useState<any>(null);
   const [loadingPersonality, setLoadingPersonality] = useState(true);
   const { toast } = useToast();
@@ -114,10 +116,7 @@ export const FlatDetailsModal = ({ flat, open, onOpenChange }: FlatDetailsModalP
       return;
     }
 
-    toast({
-      title: 'Interest expressed',
-      description: 'The flat owner will be notified of your interest.',
-    });
+    setShowExpressInterestModal(true);
   };
 
   const handleShare = () => {
@@ -355,6 +354,11 @@ export const FlatDetailsModal = ({ flat, open, onOpenChange }: FlatDetailsModalP
       </Dialog>
 
       <LoginModal open={showLoginModal} onOpenChange={setShowLoginModal} />
+      <ExpressInterestModal 
+        flatId={flat.id} 
+        open={showExpressInterestModal} 
+        onOpenChange={setShowExpressInterestModal} 
+      />
     </>
   );
 };

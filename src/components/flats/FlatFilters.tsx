@@ -125,7 +125,7 @@ export const FlatFilters = ({ onSearch, selectedCity }: FlatFiltersProps) => {
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">Manual Filters</h3>
         {hasActiveFilters() && (
-          <Button variant="outline" size="sm" onClick={clearFilters} className="text-muted-foreground hover:text-foreground">
+          <Button variant="secondary" size="sm" onClick={clearFilters} className="font-medium">
             Clear Filters
           </Button>
         )}
