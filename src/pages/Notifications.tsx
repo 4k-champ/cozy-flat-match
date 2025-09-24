@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +10,7 @@ import { FlatCardSkeleton } from '@/components/layout/FlatCardSkeleton';
 
 interface Notification {
   id: number;
+  flatId: number;
   flatTitle: string;
   name: string;
   userEmail?: string;
@@ -22,6 +24,7 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchNotifications();
@@ -203,7 +206,14 @@ const Notifications = () => {
                     </div>
 
                     <div className="flex items-center gap-2 pt-2">
-                      <Button size="sm" variant="primary">
+                      <Button 
+                        size="sm" 
+                        variant="primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/chat/${notification.flatId}`);
+                        }}
+                      >
                         <MessageCircle className="h-4 w-4 mr-2" />
                         Chat
                       </Button>
