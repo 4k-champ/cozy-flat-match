@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +45,7 @@ export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'gri
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { toast } = useToast();
   const { isInWishlist, toggleWishlist, loading } = useWishlist();
+  const navigate = useNavigate();
 
   const handleChat = () => {
     if (!auth.isAuthenticated()) {
@@ -51,11 +53,7 @@ export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'gri
       return;
     }
 
-    // Open chat functionality would be implemented here
-    toast({
-      title: 'Chat feature',
-      description: 'Chat functionality would open here with dummy messages.',
-    });
+    navigate(`/chat/${flat.id}`);
   };
 
   const handleLike = () => {
