@@ -37,12 +37,12 @@ const Flats = () => {
       const response = await auth.fetchWithAuth('/flat/fetchFlats');
       if (response.ok) {
         const data: Flat[] = await response.json();
-        let filteredData = data;
+        let filteredData = data.filter(flat => flat && flat.id); // Filter out invalid entries
         
         // Filter by city if selected
         if (selectedCity) {
-          filteredData = data.filter(flat => 
-            flat.city.toLowerCase().includes(selectedCity.toLowerCase())
+          filteredData = filteredData.filter(flat => 
+            flat.city && flat.city.toLowerCase().includes(selectedCity.toLowerCase())
           );
         }
         
@@ -106,7 +106,9 @@ const Flats = () => {
       const response = await auth.fetchWithAuth('/flat/personality-matches');
       if (response.ok) {
         const data: FlatWithMatch[] = await response.json();
-        setPersonalityMatches(data);
+        // Filter out any invalid entries and ensure proper structure
+        const validMatches = data.filter(item => item && item.flat && item.flat.id);
+        setPersonalityMatches(validMatches);
       } else {
         throw new Error('Failed to fetch personality matches');
       }
@@ -163,7 +165,9 @@ const Flats = () => {
     }
   };
 
-  const displayFlats = usePersonalityFilter ? personalityMatches : flats.map(flat => ({ flat, matchPercentage: 0 }));
+  const displayFlats = usePersonalityFilter 
+    ? personalityMatches.filter(item => item?.flat?.id) 
+    : flats.filter(flat => flat?.id).map(flat => ({ flat, matchPercentage: 0 }));
 
   return (
     <div className="min-h-screen bg-background">
