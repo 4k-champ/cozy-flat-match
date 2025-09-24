@@ -103,7 +103,7 @@ const Flats = () => {
 
     setIsLoading(true);
     try {
-      const response = await auth.fetchWithAuth('/flatFit-v1/flat/personality-matches');
+      const response = await auth.fetchWithAuth('/flat/personality-matches');
       if (response.ok) {
         const data: FlatWithMatch[] = await response.json();
         setPersonalityMatches(data);

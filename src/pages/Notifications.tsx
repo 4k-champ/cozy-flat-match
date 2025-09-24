@@ -92,9 +92,8 @@ const Notifications = () => {
   };
 
   const handleCardClick = (notification: Notification) => {
-    if (!notification.read) {
-      markAsRead(notification.id);
-    }
+    // Just for visual feedback, no longer auto-marking as read
+    console.log('Notification clicked:', notification.id);
   };
 
   if (loading) {
