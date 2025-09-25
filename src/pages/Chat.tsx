@@ -55,16 +55,9 @@ const Chat = () => {
 
   const initializeChat = async () => {
     try {
-      // First, get flat details to determine owner
-      const flatResponse = await auth.fetchWithAuth(`/flats/${flatId}`);
-      if (!flatResponse.ok) {
-        throw new Error('Failed to fetch flat details');
-      }
-      const flat = await flatResponse.json();
-      setFlatDetails(flat);
-
-      // Create or get chat room
-      const roomResponse = await auth.fetchWithAuth(`/chat/room/${flatId}/${flat.postedBy.id}`, {
+      // Create or get chat room (ownerId unknown -> send 'null')
+      const ownerIdParam = 'null';
+      const roomResponse = await auth.fetchWithAuth(`/api/chat/room/${flatId}/${ownerIdParam}`, {
         method: 'POST'
       });
       if (!roomResponse.ok) {
@@ -73,10 +66,14 @@ const Chat = () => {
       const room: ChatRoom = await roomResponse.json();
       setChatRoom(room);
 
-      // Determine other user ID
-      const currentUserId = currentUser?.id || 0;
-      const otherId = room.ownerId === currentUserId ? room.interestedUserId : room.ownerId;
-      setOtherUserId(otherId);
+      // Determine other user ID if we know our own id
+      const currentUserId = currentUser?.id;
+      if (currentUserId != null) {
+        const otherId = room.ownerId === currentUserId ? room.interestedUserId : room.ownerId;
+        setOtherUserId(otherId);
+      } else {
+        setOtherUserId(null);
+      }
 
       // Fetch messages
       await fetchMessages(room.id);
@@ -95,7 +92,7 @@ const Chat = () => {
   };
 
   const connectWebSocket = (chatRoomId: number) => {
-    const socket = new SockJS('http://localhost:8080/ws-chat');
+    const socket = new SockJS('http://localhost:8080/flatFit-v1/ws-chat');
     const stompClient = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000,
@@ -120,6 +117,10 @@ const Chat = () => {
             }
             return [...prev, chatMessage];
           });
+          // If the incoming message is for the current user, mark as read
+          if (chatMessage.receiverEmail === currentUserEmail) {
+            markMessagesAsRead(chatRoomId);
+          }
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
         }
@@ -160,15 +161,15 @@ const Chat = () => {
 
   const fetchMessages = async (chatRoomId: number) => {
     try {
-      const response = await auth.fetchWithAuth(`/chat/messages/${chatRoomId}`);
+      const response = await auth.fetchWithAuth(`/api/chat/messages/${chatRoomId}`);
       if (response.ok) {
         const data: ChatMessage[] = await response.json();
+        data.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
         setMessages(data);
         
         // Mark unread messages as read
-        const currentUserId = currentUser?.id || 0;
         const unreadMessages = data.filter(msg => 
-          msg.receiverId === currentUserId && !msg.read
+          msg.receiverEmail === currentUserEmail && !msg.read
         );
         if (unreadMessages.length > 0) {
           markMessagesAsRead(chatRoomId);
@@ -189,12 +190,12 @@ const Chat = () => {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !otherUserId || !chatRoom || sending) return;
+    if (!newMessage.trim() || !chatRoom || sending) return;
 
     setSending(true);
     try {
       const messageData: SendMessageRequest = {
-        receiverId: otherUserId,
+        receiverId: otherUserId ?? null,
         message: newMessage.trim(),
       };
 
@@ -210,7 +211,7 @@ const Chat = () => {
         setNewMessage('');
       } else {
         // Fallback to REST API
-        const response = await auth.fetchWithAuth(`/chat/messages/${chatRoom.id}`, {
+        const response = await auth.fetchWithAuth(`/api/chat/messages/${chatRoom.id}`, {
           method: 'POST',
           body: JSON.stringify(messageData),
         });
@@ -236,7 +237,7 @@ const Chat = () => {
 
   const markMessagesAsRead = async (chatRoomId: number) => {
     try {
-      await auth.fetchWithAuth(`/chat/messages/${chatRoomId}/read`, {
+      await auth.fetchWithAuth(`/api/chat/messages/${chatRoomId}/read`, {
         method: 'PATCH',
       });
     } catch (error) {
@@ -282,6 +283,20 @@ const Chat = () => {
     }
   };
 
+  // Mark messages as read when window gains focus
+  useEffect(() => {
+    if (!chatRoom) return;
+    const onFocus = () => {
+      const hasUnread = messages.some(
+        (m) => m.receiverEmail === currentUserEmail && !m.read
+      );
+      if (hasUnread) {
+        markMessagesAsRead(chatRoom.id);
+      }
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [chatRoom, messages, currentUserEmail]);
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -332,22 +347,22 @@ const Chat = () => {
               </div>
             ) : (
               messages.map((message) => {
-                const isOwnMessage = message.senderId === (currentUser?.id || 0);
+                const isOwnMessage = message.senderEmail === currentUserEmail || (currentUser?.id != null && message.senderId === currentUser.id);
                 return (
                   <div
                     key={message.id}
-                    className={`flex ${isOwnMessage ? 'justify-start' : 'justify-end'}`}
+                    className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
                       className={`max-w-[70%] rounded-lg px-3 py-2 ${
                         isOwnMessage
-                          ? 'bg-muted text-foreground'
-                          : 'bg-primary text-primary-foreground'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-foreground'
                       }`}
                     >
                       <p className="text-sm">{message.message}</p>
                       <div className={`flex items-center justify-end gap-1 mt-1 ${
-                        isOwnMessage ? 'text-muted-foreground' : 'text-primary-foreground/70'
+                        isOwnMessage ? 'text-primary-foreground/70' : 'text-muted-foreground'
                       }`}>
                         <span className="text-xs">
                           {formatTimestamp(message.createdAt)}

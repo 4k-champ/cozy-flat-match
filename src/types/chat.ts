@@ -19,6 +19,6 @@ export interface ChatRoom {
 }
 
 export interface SendMessageRequest {
-  receiverId: number;
+  receiverId: number | null;
   message: string;
 }
