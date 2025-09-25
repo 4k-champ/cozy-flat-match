@@ -1,6 +1,8 @@
 export interface ChatMessage {
   id: number;
-  flatId: number;
+  chatRoomId: number;
+  senderId: number;
+  receiverId: number;
   senderEmail: string;
   receiverEmail: string;
   message: string;
@@ -8,7 +10,15 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+export interface ChatRoom {
+  id: number;
+  flatId: number;
+  ownerId: number;
+  interestedUserId: number;
+  createdAt: string;
+}
+
 export interface SendMessageRequest {
-  receiverEmail: string;
+  receiverId: number;
   message: string;
 }

@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ArrowLeft, Send, Check, CheckCheck } from 'lucide-react';
 import { auth } from '@/lib/auth';
-import { ChatMessage, SendMessageRequest } from '@/types/chat';
+import { ChatMessage, ChatRoom, SendMessageRequest } from '@/types/chat';
 import { useToast } from '@/hooks/use-toast';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
@@ -20,7 +20,8 @@ const Chat = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [otherUserEmail, setOtherUserEmail] = useState<string | null>(null);
+  const [chatRoom, setChatRoom] = useState<ChatRoom | null>(null);
+  const [otherUserId, setOtherUserId] = useState<number | null>(null);
   const [flatDetails, setFlatDetails] = useState<any>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const stompClientRef = useRef<Client | null>(null);
@@ -39,8 +40,7 @@ const Chat = () => {
       return;
     }
 
-    fetchMessages();
-    connectWebSocket();
+    initializeChat();
 
     return () => {
       if (stompClientRef.current) {
@@ -53,7 +53,48 @@ const Chat = () => {
     scrollToBottom();
   }, [messages]);
 
-  const connectWebSocket = () => {
+  const initializeChat = async () => {
+    try {
+      // First, get flat details to determine owner
+      const flatResponse = await auth.fetchWithAuth(`/flats/${flatId}`);
+      if (!flatResponse.ok) {
+        throw new Error('Failed to fetch flat details');
+      }
+      const flat = await flatResponse.json();
+      setFlatDetails(flat);
+
+      // Create or get chat room
+      const roomResponse = await auth.fetchWithAuth(`/chat/room/${flatId}/${flat.postedBy.id}`, {
+        method: 'POST'
+      });
+      if (!roomResponse.ok) {
+        throw new Error('Failed to create/get chat room');
+      }
+      const room: ChatRoom = await roomResponse.json();
+      setChatRoom(room);
+
+      // Determine other user ID
+      const currentUserId = currentUser?.id || 0;
+      const otherId = room.ownerId === currentUserId ? room.interestedUserId : room.ownerId;
+      setOtherUserId(otherId);
+
+      // Fetch messages
+      await fetchMessages(room.id);
+      
+      // Connect WebSocket
+      connectWebSocket(room.id);
+    } catch (error) {
+      console.error('Error initializing chat:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load chat',
+        variant: 'destructive',
+      });
+      setLoading(false);
+    }
+  };
+
+  const connectWebSocket = (chatRoomId: number) => {
     const socket = new SockJS('http://localhost:8080/ws-chat');
     const stompClient = new Client({
       webSocketFactory: () => socket,
@@ -65,7 +106,9 @@ const Chat = () => {
 
     stompClient.onConnect = () => {
       console.log('Connected to WebSocket');
-      stompClient.subscribe(`/topic/chat/${flatId}`, (message) => {
+      
+      // Subscribe to room messages
+      stompClient.subscribe(`/topic/chat.room.${chatRoomId}`, (message) => {
         try {
           const chatMessage: ChatMessage = JSON.parse(message.body);
           setMessages(prev => {
@@ -81,6 +124,29 @@ const Chat = () => {
           console.error('Error parsing WebSocket message:', error);
         }
       });
+
+      // Subscribe to personal message notifications
+      stompClient.subscribe(`/user/queue/messages`, (message) => {
+        try {
+          const notification = JSON.parse(message.body);
+          console.log('New message notification:', notification);
+          // Handle personal notifications (e.g., show toast if not in current room)
+        } catch (error) {
+          console.error('Error parsing personal message:', error);
+        }
+      });
+
+      // Subscribe to read receipts
+      stompClient.subscribe(`/user/queue/read-receipts`, (message) => {
+        try {
+          const readReceipt = JSON.parse(message.body);
+          setMessages(prev => prev.map(msg => 
+            msg.id === readReceipt.messageId ? { ...msg, read: true } : msg
+          ));
+        } catch (error) {
+          console.error('Error parsing read receipt:', error);
+        }
+      });
     };
 
     stompClient.onStompError = (frame) => {
@@ -92,26 +158,20 @@ const Chat = () => {
     stompClientRef.current = stompClient;
   };
 
-  const fetchMessages = async () => {
+  const fetchMessages = async (chatRoomId: number) => {
     try {
-      const response = await auth.fetchWithAuth(`/chat/${flatId}`);
+      const response = await auth.fetchWithAuth(`/chat/messages/${chatRoomId}`);
       if (response.ok) {
         const data: ChatMessage[] = await response.json();
         setMessages(data);
         
-        // Determine other user email and mark unread messages as read
-        if (data.length > 0) {
-          const otherUser = data.find(msg => 
-            msg.senderEmail !== currentUserEmail && msg.receiverEmail === currentUserEmail
-          );
-          if (otherUser) {
-            setOtherUserEmail(otherUser.senderEmail);
-            // Mark unread messages as read
-            const unreadMessages = data.filter(msg => 
-              msg.receiverEmail === currentUserEmail && !msg.read
-            );
-            unreadMessages.forEach(msg => markAsRead(msg.id));
-          }
+        // Mark unread messages as read
+        const currentUserId = currentUser?.id || 0;
+        const unreadMessages = data.filter(msg => 
+          msg.receiverId === currentUserId && !msg.read
+        );
+        if (unreadMessages.length > 0) {
+          markMessagesAsRead(chatRoomId);
         }
       } else {
         throw new Error('Failed to fetch messages');
@@ -129,25 +189,38 @@ const Chat = () => {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !otherUserEmail || sending) return;
+    if (!newMessage.trim() || !otherUserId || !chatRoom || sending) return;
 
     setSending(true);
     try {
       const messageData: SendMessageRequest = {
-        receiverEmail: otherUserEmail,
+        receiverId: otherUserId,
         message: newMessage.trim(),
       };
 
-      const response = await auth.fetchWithAuth(`/chat/${flatId}`, {
-        method: 'POST',
-        body: JSON.stringify(messageData),
-      });
-
-      if (response.ok) {
+      // Send via WebSocket if available, otherwise use REST API
+      if (stompClientRef.current?.connected) {
+        stompClientRef.current.publish({
+          destination: '/chat.send',
+          body: JSON.stringify({
+            chatRoomId: chatRoom.id,
+            ...messageData
+          })
+        });
         setNewMessage('');
-        // Message will be added via WebSocket
       } else {
-        throw new Error('Failed to send message');
+        // Fallback to REST API
+        const response = await auth.fetchWithAuth(`/chat/messages/${chatRoom.id}`, {
+          method: 'POST',
+          body: JSON.stringify(messageData),
+        });
+
+        if (response.ok) {
+          setNewMessage('');
+          // Message will be added via WebSocket
+        } else {
+          throw new Error('Failed to send message');
+        }
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -161,13 +234,13 @@ const Chat = () => {
     }
   };
 
-  const markAsRead = async (messageId: number) => {
+  const markMessagesAsRead = async (chatRoomId: number) => {
     try {
-      await auth.fetchWithAuth(`/chat/${messageId}/read`, {
+      await auth.fetchWithAuth(`/chat/messages/${chatRoomId}/read`, {
         method: 'PATCH',
       });
     } catch (error) {
-      console.error('Error marking message as read:', error);
+      console.error('Error marking messages as read:', error);
     }
   };
 
@@ -259,7 +332,7 @@ const Chat = () => {
               </div>
             ) : (
               messages.map((message) => {
-                const isOwnMessage = message.senderEmail === currentUserEmail;
+                const isOwnMessage = message.senderId === (currentUser?.id || 0);
                 return (
                   <div
                     key={message.id}

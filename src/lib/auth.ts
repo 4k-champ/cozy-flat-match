@@ -1,6 +1,7 @@
 const API_BASE_URL = 'http://localhost:8080/flatFit-v1';
 
 export interface User {
+  id?: number;
   email: string;
   name: string;
   gender?: string;
