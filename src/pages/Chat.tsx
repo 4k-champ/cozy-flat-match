@@ -104,7 +104,7 @@ const Chat = () => {
   };
 
   const connectWebSocket = (chatRoomId: number) => {
-    const socket = new SockJS('http://localhost:8080/flatFit-v1/ws-chat');
+    const socket = new SockJS('ws://localhost:8080/ws');
     const stompClient = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000,
@@ -214,10 +214,11 @@ const Chat = () => {
       // Send via WebSocket if available, otherwise use REST API
       if (stompClientRef.current?.connected) {
         stompClientRef.current.publish({
-          destination: '/chat.send',
+          destination: '/app/chat.send',
           body: JSON.stringify({
             chatRoomId: chatRoom.id,
-            ...messageData
+            content: newMessage.trim(),
+            contentType: 'TEXT'
           })
         });
         setNewMessage('');
