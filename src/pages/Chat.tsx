@@ -56,7 +56,7 @@ const Chat = () => {
   const initializeChat = async () => {
     try {
       // First fetch notifications to get interestedUserId
-      const notificationsResponse = await auth.fetchWithAuth('/flatFit-v1/notifications');
+      const notificationsResponse = await auth.fetchWithAuth('/notifications');
       let interestedUserId = null;
       
       if (notificationsResponse.ok) {
@@ -68,8 +68,7 @@ const Chat = () => {
       }
       
       // Create or get chat room with interestedUserId
-      const ownerIdParam = interestedUserId || 'null';
-      const roomResponse = await auth.fetchWithAuth(`/flatFit-v1/api/chat/room/${flatId}/${ownerIdParam}`, {
+      const roomResponse = await auth.fetchWithAuth(`/api/chat/room/${flatId}/${interestedUserId || 'null'}`, {
         method: 'POST'
       });
       if (!roomResponse.ok) {
@@ -173,7 +172,7 @@ const Chat = () => {
 
   const fetchMessages = async (chatRoomId: number) => {
     try {
-      const response = await auth.fetchWithAuth(`/flatFit-v1/api/chat/messages/${chatRoomId}`);
+      const response = await auth.fetchWithAuth(`/api/chat/messages/${chatRoomId}`);
       if (response.ok) {
         const data: ChatMessage[] = await response.json();
         data.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -224,7 +223,7 @@ const Chat = () => {
         setNewMessage('');
       } else {
         // Fallback to REST API
-        const response = await auth.fetchWithAuth(`/flatFit-v1/api/chat/messages/${chatRoom.id}`, {
+        const response = await auth.fetchWithAuth(`/api/chat/messages/${chatRoom.id}`, {
           method: 'POST',
           body: JSON.stringify(messageData),
         });
@@ -250,7 +249,7 @@ const Chat = () => {
 
   const markMessagesAsRead = async (chatRoomId: number) => {
     try {
-      await auth.fetchWithAuth(`/flatFit-v1/api/chat/messages/${chatRoomId}/read`, {
+      await auth.fetchWithAuth(`/api/chat/messages/${chatRoomId}/read`, {
         method: 'PATCH',
       });
     } catch (error) {
