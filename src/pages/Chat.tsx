@@ -103,10 +103,12 @@ const Chat = () => {
   };
 
   const connectWebSocket = (chatRoomId: number) => {
-    const socket = new SockJS('ws://localhost:8080/ws');
+    const socket = new SockJS('http://localhost:8080/ws');
+    const token = auth.getToken();
     const stompClient = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000,
+      connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
       debug: (str) => {
         console.log(str);
       },
@@ -222,18 +224,15 @@ const Chat = () => {
         });
         setNewMessage('');
       } else {
-        // Fallback to REST API
-        const response = await auth.fetchWithAuth(`/api/chat/messages/${chatRoom.id}`, {
-          method: 'POST',
-          body: JSON.stringify(messageData),
+        // No REST fallback: backend expects WebSocket for sending
+        toast({
+          title: 'Connecting...',
+          description: 'Reconnecting to chat. Please try again in a moment.',
         });
-
-        if (response.ok) {
-          setNewMessage('');
-          // Message will be added via WebSocket
-        } else {
-          throw new Error('Failed to send message');
+        if (stompClientRef.current && !stompClientRef.current.active) {
+          stompClientRef.current.activate();
         }
+        throw new Error('WebSocket not connected');
       }
     } catch (error) {
       console.error('Error sending message:', error);
