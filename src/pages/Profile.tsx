@@ -19,7 +19,8 @@ import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/auth';
 import { PersonalityModal } from '@/components/personality/PersonalityModal';
 import { GENDER_OPTIONS, INDIAN_CITIES } from '@/types/flatfit';
-import { User, CheckCircle, XCircle, Brain } from 'lucide-react';
+import { User, CheckCircle, XCircle, Brain, MessageSquare } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -36,6 +37,7 @@ const Profile = () => {
   const [showPersonalityModal, setShowPersonalityModal] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [cities, setCities] = useState<string[]>(INDIAN_CITIES);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch cities from API
@@ -140,6 +142,25 @@ const Profile = () => {
           <h1 className="text-3xl font-bold text-foreground mb-2">My Profile</h1>
           <p className="text-muted-foreground">Manage your FlatFit profile and preferences</p>
         </div>
+
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              variant="outline" 
+              className="w-full justify-start gap-3 h-auto py-4"
+              onClick={() => navigate('/chats')}
+            >
+              <MessageSquare className="h-5 w-5 text-primary" />
+              <div className="text-left flex-1">
+                <div className="font-semibold">My Chats</div>
+                <div className="text-xs text-muted-foreground">View all your conversations</div>
+              </div>
+            </Button>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

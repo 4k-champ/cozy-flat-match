@@ -116,107 +116,113 @@ const Notifications = () => {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Notifications</h1>
-          <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="text-sm">
-              {notifications.filter(n => !n.read).length} unread
-            </Badge>
-            {notifications.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearAllNotifications}
-                className="text-sm"
-              >
-                Clear All
-              </Button>
-            )}
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <div className="container mx-auto py-8 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Notifications</h1>
+              <p className="text-muted-foreground">Stay updated with your flat interests</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge variant="default" className="text-sm px-3 py-1">
+                {notifications.filter(n => !n.read).length} unread
+              </Badge>
+              {notifications.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearAllNotifications}
+                >
+                  Clear All
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
 
-        {notifications.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <div className="text-muted-foreground">
-                <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No notifications yet</p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {notifications.map((notification) => (
-              <Card
-                key={notification.id}
-                className={`cursor-pointer transition-all hover:shadow-md ${
-                  !notification.read 
-                    ? 'bg-background border-primary/20 shadow-sm' 
-                    : 'bg-muted/30 opacity-70'
-                }`}
-                onClick={() => handleCardClick(notification)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1">
-                        {notification.flatTitle}
-                      </h3>
-                      <p className="text-muted-foreground">
-                        <span className="font-medium text-foreground">
-                          {notification.name}
-                        </span>
-                        {" "}expressed interest in your flat
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(notification.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                    {!notification.read && (
-                      <div className="h-2 w-2 bg-primary rounded-full flex-shrink-0 mt-2" />
-                    )}
+          {notifications.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="py-16 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                    <MessageCircle className="h-8 w-8 text-muted-foreground" />
                   </div>
-                </CardHeader>
-
-                <CardContent className="pt-0">
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="font-medium mb-2">Contact Details:</h4>
-                      {notification.shareContact ? (
-                        <div className="space-y-2">
-                          {notification.userEmail && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <Mail className="h-4 w-4 text-muted-foreground" />
-                              <span>{notification.userEmail}</span>
-                            </div>
-                          )}
-                          {notification.userPhone && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <Phone className="h-4 w-4 text-muted-foreground" />
-                              <span>{notification.userPhone}</span>
-                            </div>
+                  <div>
+                    <h3 className="font-semibold text-lg mb-1">No notifications yet</h3>
+                    <p className="text-sm text-muted-foreground">
+                      When someone expresses interest in your flats, you'll see it here
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {notifications.map((notification) => (
+                <Card
+                  key={notification.id}
+                  className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.01] ${
+                    !notification.read 
+                      ? 'bg-background border-primary/30 shadow-md' 
+                      : 'bg-muted/50 opacity-80'
+                  }`}
+                  onClick={() => handleCardClick(notification)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-bold text-lg text-foreground">
+                            {notification.flatTitle}
+                          </h3>
+                          {!notification.read && (
+                            <Badge variant="default" className="text-xs">New</Badge>
                           )}
                         </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          No contact details shared
+                        <p className="text-sm text-muted-foreground mb-2">
+                          <span className="font-semibold text-foreground">
+                            {notification.name}
+                          </span>
+                          {" "}expressed interest in your flat
                         </p>
-                      )}
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
+                  </CardHeader>
 
-                    <div className="flex items-center gap-2 pt-2">
+                  <CardContent className="pt-0 space-y-4">
+                    {notification.shareContact && (notification.userEmail || notification.userPhone) && (
+                      <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                        <h4 className="font-semibold text-sm text-foreground mb-2">Contact Details</h4>
+                        {notification.userEmail && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="h-4 w-4 text-primary" />
+                            <span className="text-foreground">{notification.userEmail}</span>
+                          </div>
+                        )}
+                        {notification.userPhone && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Phone className="h-4 w-4 text-primary" />
+                            <span className="text-foreground">{notification.userPhone}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-2">
                       <Button 
                         size="sm" 
-                        variant="primary"
+                        variant="default"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/chat/${notification.flatId}/${notification.interestedUserId}`);
                         }}
+                        className="flex-1 sm:flex-initial"
                       >
                         <MessageCircle className="h-4 w-4 mr-2" />
-                        Chat
+                        Start Chat
                       </Button>
                       {!notification.read && (
                         <Button 
@@ -228,16 +234,16 @@ const Notifications = () => {
                           }}
                         >
                           <CheckCircle className="h-4 w-4 mr-2" />
-                          Mark as Read
+                          Mark Read
                         </Button>
                       )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

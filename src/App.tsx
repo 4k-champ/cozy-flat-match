@@ -14,6 +14,7 @@ import MyFavs from "./pages/MyFavs";
 import MyFlats from "./pages/MyFlats";
 import Notifications from "./pages/Notifications";
 import Chat from "./pages/Chat";
+import Chats from "./pages/Chats";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/my-favs" element={<MyFavs />} />
               <Route path="/my-flats" element={<MyFlats />} />
               <Route path="/notifications" element={<Notifications />} />
+              <Route path="/chats" element={<Chats />} />
               <Route path="/chat/:flatId/:interestedUserId" element={<Chat />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
