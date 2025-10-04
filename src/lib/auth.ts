@@ -15,6 +15,7 @@ export interface LoginResponse {
   token: string;
   email: string;
   name: string;
+  id: number
 }
 
 export interface RegisterRequest {
@@ -56,7 +57,7 @@ export const auth = {
     
     const data = await response.json();
     auth.setToken(data.token);
-    auth.setUser({ email: data.email, name: data.name });
+    auth.setUser({ email: data.email, name: data.name, id: data.id });
     return data;
   },
   

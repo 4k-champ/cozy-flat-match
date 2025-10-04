@@ -13,6 +13,7 @@ interface Notification {
   flatId: number;
   flatTitle: string;
   name: string;
+  interestedUserId: string,
   userEmail?: string;
   userPhone?: string;
   shareContact: boolean;
@@ -211,7 +212,7 @@ const Notifications = () => {
                         variant="primary"
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/chat/${notification.flatId}`);
+                          navigate(`/chat/${notification.flatId}/${notification.interestedUserId}`);
                         }}
                       >
                         <MessageCircle className="h-4 w-4 mr-2" />

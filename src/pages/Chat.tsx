@@ -7,346 +7,340 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ArrowLeft, Send, Check, CheckCheck } from 'lucide-react';
 import { auth } from '@/lib/auth';
-import { ChatMessage, ChatRoom, SendMessageRequest } from '@/types/chat';
+import { ChatMessage, ChatRoom } from '@/types/chat';
 import { useToast } from '@/hooks/use-toast';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 
 const Chat = () => {
-  const { flatId } = useParams<{ flatId: string }>();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [chatRoom, setChatRoom] = useState<ChatRoom | null>(null);
-  const [otherUserId, setOtherUserId] = useState<number | null>(null);
-  const [flatDetails, setFlatDetails] = useState<any>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const stompClientRef = useRef<Client | null>(null);
+    const { flatId, interestedUserId } = useParams<{ flatId: string, interestedUserId: string }>();
+    const navigate = useNavigate();
+    const { toast } = useToast();
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [sending, setSending] = useState(false);
+    const [chatRoom, setChatRoom] = useState<ChatRoom | null>(null);
+    const [otherUserId, setOtherUserId] = useState<number | null>(null);
+    const [flatDetails, setFlatDetails] = useState<any>(null);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const stompClientRef = useRef<Client | null>(null);
 
-  const currentUser = auth.getUser();
-  const currentUserEmail = currentUser?.email;
+    const currentUser = auth.getUser();
+    const currentUserEmail = currentUser?.email;
 
-  useEffect(() => {
-    if (!auth.isAuthenticated()) {
-      navigate('/');
-      return;
-    }
-
-    if (!flatId) {
-      navigate('/flats');
-      return;
-    }
-
-    initializeChat();
-
-    return () => {
-      if (stompClientRef.current) {
-        stompClientRef.current.deactivate();
-      }
-    };
-  }, [flatId]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const initializeChat = async () => {
-    try {
-      // First fetch notifications to get interestedUserId
-      const notificationsResponse = await auth.fetchWithAuth('/notifications');
-      let interestedUserId = null;
-      
-      if (notificationsResponse.ok) {
-        const notifications = await notificationsResponse.json();
-        const flatNotification = notifications.find((n: any) => n.flatId === parseInt(flatId!));
-        if (flatNotification && flatNotification.interestedUserId) {
-          interestedUserId = flatNotification.interestedUserId;
+    useEffect(() => {
+        if (!auth.isAuthenticated()) {
+            navigate('/');
+            return;
         }
-      }
-      
-      // Create or get chat room with interestedUserId
-      const roomResponse = await auth.fetchWithAuth(`/api/chat/room/${flatId}/${interestedUserId || 'null'}`, {
-        method: 'POST'
-      });
-      if (!roomResponse.ok) {
-        throw new Error('Failed to create/get chat room');
-      }
-      const room: ChatRoom = await roomResponse.json();
-      setChatRoom(room);
 
-      // Determine other user ID if we know our own id
-      const currentUserId = currentUser?.id;
-      if (currentUserId != null) {
-        const otherId = room.ownerId === currentUserId ? room.interestedUserId : room.ownerId;
-        setOtherUserId(otherId);
-      } else {
-        setOtherUserId(null);
-      }
+        if (!flatId) {
+            navigate('/flats');
+            return;
+        }
 
-      // Fetch messages
-      await fetchMessages(room.id);
-      
-      // Connect WebSocket
-      connectWebSocket(room.id);
-    } catch (error) {
-      console.error('Error initializing chat:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load chat',
-        variant: 'destructive',
-      });
-      setLoading(false);
-    }
-  };
+        initializeChat();
 
-  const connectWebSocket = (chatRoomId: number) => {
-    const socket = new SockJS('http://localhost:8080/ws');
-    const token = auth.getToken();
-    const stompClient = new Client({
-      webSocketFactory: () => socket,
-      reconnectDelay: 5000,
-      connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
-      debug: (str) => {
-        console.log(str);
-      },
-    });
-
-    stompClient.onConnect = () => {
-      console.log('Connected to WebSocket');
-      
-      // Subscribe to room messages
-      stompClient.subscribe(`/topic/chat.room.${chatRoomId}`, (message) => {
-        try {
-          const chatMessage: ChatMessage = JSON.parse(message.body);
-          setMessages(prev => {
-            // Avoid duplicate messages
-            if (prev.find(msg => msg.id === chatMessage.id)) {
-              return prev.map(msg => 
-                msg.id === chatMessage.id ? chatMessage : msg
-              );
+        return () => {
+            if (stompClientRef.current) {
+                stompClientRef.current.deactivate();
             }
-            return [...prev, chatMessage];
-          });
-          // If the incoming message is for the current user, mark as read
-          if (chatMessage.receiverEmail === currentUserEmail) {
-            markMessagesAsRead(chatRoomId);
-          }
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
-        }
-      });
+        };
+    }, [flatId]);
 
-      // Subscribe to personal message notifications
-      stompClient.subscribe(`/user/queue/messages`, (message) => {
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            scrollToBottom();
+        }, 100); // Give the DOM time to render
+
+        return () => clearTimeout(timeout);
+    }, [messages]);
+
+
+    const initializeChat = async () => {
         try {
-          const notification = JSON.parse(message.body);
-          console.log('New message notification:', notification);
-          // Handle personal notifications (e.g., show toast if not in current room)
-        } catch (error) {
-          console.error('Error parsing personal message:', error);
-        }
-      });
 
-      // Subscribe to read receipts
-      stompClient.subscribe(`/user/queue/read-receipts`, (message) => {
+            const roomResponse = await auth.fetchWithAuth(
+                `/api/chat/room/${flatId}/${interestedUserId || 'null'}`,
+                {
+                    method: 'POST',
+                }
+            );
+            if (!roomResponse.ok) {
+                throw new Error('Failed to create/get chat room');
+            }
+            const room: ChatRoom = await roomResponse.json();
+            setChatRoom(room);
+
+            const currentUserId = currentUser?.id;
+            if (currentUserId != null) {
+                const otherId =
+                    room.ownerId === currentUserId ? room.interestedUserId : room.ownerId;
+                setOtherUserId(otherId);
+            } else {
+                setOtherUserId(null);
+            }
+
+            await fetchMessages(room.id);
+            connectWebSocket(room.id);
+        } catch (error) {
+            console.error('Error initializing chat:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to load chat',
+                variant: 'destructive',
+            });
+            setLoading(false);
+        }
+    };
+
+    const connectWebSocket = (chatRoomId: number) => {
+        const socket = new SockJS('http://localhost:8080/ws');
+        const token = auth.getToken();
+        const stompClient = new Client({
+            webSocketFactory: () => socket,
+            reconnectDelay: 5000,
+            connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+            debug: (str) => {
+                // console.log(str);
+            },
+        });
+
+        stompClient.onConnect = () => {
+            console.log('Connected to WebSocket');
+
+            stompClient.subscribe(`/topic/chat.room.${chatRoomId}`, (message) => {
+                try {
+                    const chatMessage: ChatMessage = JSON.parse(message.body);
+                    setMessages((prev) => {
+                        if (prev.find((msg) => msg.id === chatMessage.id)) {
+                            return prev.map((msg) =>
+                                msg.id === chatMessage.id ? chatMessage : msg
+                            );
+                        }
+                        return [...prev, chatMessage];
+                    });
+                    if (chatMessage.senderId !== currentUser?.id) {
+                        markMessagesAsRead(chatRoomId); // as soon as message comes the read call is made
+                    }
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            });
+
+            stompClient.subscribe(`/queue/read-receipts`, (message) => {
+                console.log("atleast came here")
+                try {
+                    const readReceipts: ChatMessage[] = JSON.parse(message.body);
+
+                    setMessages((prev) =>
+                        prev.map((msg) => {
+                            const updated = readReceipts.find((r) => r.id === msg.id);
+                            return updated ? { ...msg, status: 'READ' } : msg;
+                        })
+                    );
+                } catch (error) {
+                    console.error('Error parsing read receipt:', error);
+                }
+            });
+
+            stompClient.subscribe(`/user/queue/messages`, (message) => {
+                try {
+                    const notification = JSON.parse(message.body);
+                    console.log('New message notification:', notification);
+                } catch (error) {
+                    console.error('Error parsing personal message:', error);
+                }
+            });
+
+        };
+
+        stompClient.onStompError = (frame) => {
+            console.error('Broker reported error: ' + frame.headers['message']);
+            console.error('Additional details: ' + frame.body);
+        };
+
+        stompClient.activate();
+        stompClientRef.current = stompClient;
+    };
+
+    const fetchMessages = async (chatRoomId: number) => {
         try {
-          const readReceipt = JSON.parse(message.body);
-          setMessages(prev => prev.map(msg => 
-            msg.id === readReceipt.messageId ? { ...msg, read: true } : msg
-          ));
+            const response = await auth.fetchWithAuth(
+                `/api/chat/messages/${chatRoomId}`
+            );
+            if (response.ok) {
+                const data: ChatMessage[] = await response.json();
+                data.sort(
+                    (a, b) =>
+                        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                );
+                setMessages(data);
+
+                const unreadMessages = data.filter(
+                    (msg) => msg.senderId !== currentUser?.id && msg.status === "SENT"
+                );
+                if (unreadMessages.length > 0) {
+                    markMessagesAsRead(chatRoomId);
+                }
+            } else {
+                throw new Error('Failed to fetch messages');
+            }
         } catch (error) {
-          console.error('Error parsing read receipt:', error);
+            console.error('Error fetching messages:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to load chat messages',
+                variant: 'destructive',
+            });
+        } finally {
+            setLoading(false);
         }
-      });
     };
 
-    stompClient.onStompError = (frame) => {
-      console.error('Broker reported error: ' + frame.headers['message']);
-      console.error('Additional details: ' + frame.body);
+    const sendMessage = async () => {
+        if (!newMessage.trim() || !chatRoom || sending) return;
+
+        setSending(true);
+        try {
+            if (stompClientRef.current?.connected) {
+                stompClientRef.current.publish({
+                    destination: '/app/chat.send',
+                    body: JSON.stringify({
+                        chatRoomId: chatRoom.id,
+                        content: newMessage.trim(), // 🔹 normalized to "content"
+                        contentType: 'TEXT',
+                    }),
+                });
+                setNewMessage('');
+            } else {
+                toast({
+                    title: 'Connecting...',
+                    description: 'Reconnecting to chat. Please try again in a moment.',
+                });
+                if (stompClientRef.current && !stompClientRef.current.active) {
+                    stompClientRef.current.activate();
+                }
+                throw new Error('WebSocket not connected');
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to send message',
+                variant: 'destructive',
+            });
+        } finally {
+            setSending(false);
+            console.log(messages)
+        }
     };
 
-    stompClient.activate();
-    stompClientRef.current = stompClient;
-  };
-
-  const fetchMessages = async (chatRoomId: number) => {
-    try {
-      const response = await auth.fetchWithAuth(`/api/chat/messages/${chatRoomId}`);
-      if (response.ok) {
-        const data: ChatMessage[] = await response.json();
-        data.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        setMessages(data);
-        
-        // Mark unread messages as read
-        const unreadMessages = data.filter(msg => 
-          msg.receiverEmail === currentUserEmail && !msg.read
-        );
-        if (unreadMessages.length > 0) {
-          markMessagesAsRead(chatRoomId);
+    const markMessagesAsRead = async (chatRoomId: number) => {
+        try {
+            await auth.fetchWithAuth(`/api/chat/messages/${chatRoomId}/read`, {
+                method: 'PATCH',
+            });
+        } catch (error) {
+            console.error('Error marking messages as read:', error);
         }
-      } else {
-        throw new Error('Failed to fetch messages');
-      }
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load chat messages',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !chatRoom || sending) return;
-
-    setSending(true);
-    try {
-      const messageData: SendMessageRequest = {
-        receiverId: otherUserId ?? null,
-        message: newMessage.trim(),
-      };
-
-      // Send via WebSocket if available, otherwise use REST API
-      if (stompClientRef.current?.connected) {
-        stompClientRef.current.publish({
-          destination: '/app/chat.send',
-          body: JSON.stringify({
-            chatRoomId: chatRoom.id,
-            content: newMessage.trim(),
-            contentType: 'TEXT'
-          })
-        });
-        setNewMessage('');
-      } else {
-        // No REST fallback: backend expects WebSocket for sending
-        toast({
-          title: 'Connecting...',
-          description: 'Reconnecting to chat. Please try again in a moment.',
-        });
-        if (stompClientRef.current && !stompClientRef.current.active) {
-          stompClientRef.current.activate();
-        }
-        throw new Error('WebSocket not connected');
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to send message',
-        variant: 'destructive',
-      });
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const markMessagesAsRead = async (chatRoomId: number) => {
-    try {
-      await auth.fetchWithAuth(`/api/chat/messages/${chatRoomId}/read`, {
-        method: 'PATCH',
-      });
-    } catch (error) {
-      console.error('Error marking messages as read:', error);
-    }
-  };
-
-  const scrollToBottom = () => {
-    if (scrollAreaRef.current) {
-      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-      if (scrollElement) {
-        scrollElement.scrollTop = scrollElement.scrollHeight;
-      }
-    }
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    
-    if (isToday) {
-      return date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: true 
-      });
-    } else {
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true 
-      });
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  // Mark messages as read when window gains focus
-  useEffect(() => {
-    if (!chatRoom) return;
-    const onFocus = () => {
-      const hasUnread = messages.some(
-        (m) => m.receiverEmail === currentUserEmail && !m.read
-      );
-      if (hasUnread) {
-        markMessagesAsRead(chatRoom.id);
-      }
     };
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, [chatRoom, messages, currentUserEmail]);
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading chat...</p>
-        </div>
-      </div>
-    );
-  }
 
-  return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <Card className="rounded-none border-x-0 border-t-0">
-        <CardHeader className="flex flex-row items-center space-y-0 p-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/flats')}
-            className="mr-3"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex items-center gap-3 flex-1">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback>
-                {flatDetails?.postedBy?.name?.[0] || 'F'}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <CardTitle className="text-base">Chat - Flat #{flatId}</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {flatDetails?.address || 'Loading...'}
-              </p>
+    const scrollToBottom = () => {
+        if (scrollAreaRef.current) {
+            const scrollElement =
+                scrollAreaRef.current.querySelector(
+                    '[data-radix-scroll-area-viewport]'
+                );
+            if (scrollElement) {
+                scrollElement.scrollTop = scrollElement.scrollHeight;
+            }
+        }
+    };
+
+    const formatTimestamp = (timestamp: string) => {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const isToday = date.toDateString() === now.toDateString();
+
+        if (isToday) {
+            return date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+            });
+        } else {
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+            });
+        }
+    };
+
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    };
+
+    useEffect(() => {
+        if (!chatRoom) return;
+        const onFocus = () => {
+            const hasUnread = messages.some(
+                (m) => m.senderId !== currentUser?.id && m.status == "SENT"
+            );
+            if (hasUnread) {
+                markMessagesAsRead(chatRoom.id);
+            }
+        };
+        window.addEventListener('focus', onFocus);
+        return () => window.removeEventListener('focus', onFocus);
+    }, [chatRoom, messages, currentUser?.id]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading chat...</p>
+                </div>
             </div>
-          </div>
-        </CardHeader>
-      </Card>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-background flex flex-col">
+            {/* Header */}
+            <Card className="rounded-none border-x-0 border-t-0">
+                <CardHeader className="flex flex-row items-center space-y-0 p-4">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate('/flats')}
+                        className="mr-3"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <div className="flex items-center gap-3 flex-1">
+                        <Avatar className="h-8 w-8">
+                            <AvatarFallback>
+                                {flatDetails?.postedBy?.name?.[0] || 'F'}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <CardTitle className="text-base">Chat - Flat #{flatId}</CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                {flatDetails?.address || 'Loading...'}
+                            </p>
+                        </div>
+                    </div>
+                </CardHeader>
+            </Card>
 
       {/* Messages */}
       <div className="flex-1 flex flex-col">
@@ -358,7 +352,8 @@ const Chat = () => {
               </div>
             ) : (
               messages.map((message) => {
-                const isOwnMessage = message.senderEmail === currentUserEmail || (currentUser?.id != null && message.senderId === currentUser.id);
+                if (!message.content) return null
+                const isOwnMessage = (currentUser?.id != null && message.senderId === currentUser.id);
                 return (
                   <div
                     key={message.id}
@@ -371,16 +366,19 @@ const Chat = () => {
                           : 'bg-muted text-foreground'
                       }`}
                     >
-                      <p className="text-sm">{message.message}</p>
+                      <p className="text-sm">{message.content}</p>
                       <div className={`flex items-center justify-end gap-1 mt-1 ${
                         isOwnMessage ? 'text-primary-foreground/70' : 'text-muted-foreground'
                       }`}>
                         <span className="text-xs">
                           {formatTimestamp(message.createdAt)}
                         </span>
+                        {/*  note if own message only then show single/double tick as tick for other user is not visible
+                        show double when other user has red your message
+                        */}
                         {isOwnMessage && (
                           <div>
-                            {message.read ? (
+                            {message.status == 'READ' ? (
                               <CheckCheck className="h-3 w-3" />
                             ) : (
                               <Check className="h-3 w-3" />

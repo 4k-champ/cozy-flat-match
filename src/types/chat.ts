@@ -2,11 +2,10 @@ export interface ChatMessage {
   id: number;
   chatRoomId: number;
   senderId: number;
-  receiverId: number;
-  senderEmail: string;
-  receiverEmail: string;
-  message: string;
-  read: boolean;
+  senderName: string;
+  content: string;
+  contentType: string;
+  status: string;
   createdAt: string;
 }
 

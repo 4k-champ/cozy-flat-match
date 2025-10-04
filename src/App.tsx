@@ -36,7 +36,7 @@ const App = () => (
               <Route path="/my-favs" element={<MyFavs />} />
               <Route path="/my-flats" element={<MyFlats />} />
               <Route path="/notifications" element={<Notifications />} />
-              <Route path="/chat/:flatId" element={<Chat />} />
+              <Route path="/chat/:flatId/:interestedUserId" element={<Chat />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

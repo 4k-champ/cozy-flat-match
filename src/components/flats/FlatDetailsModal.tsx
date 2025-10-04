@@ -32,6 +32,7 @@ import { LoginModal } from '@/components/auth/LoginModal';
 import { ExpressInterestModal } from '@/components/flats/ExpressInterestModal';
 import { useToast } from '@/hooks/use-toast';
 import { useWishlist } from '@/hooks/useWishlist';
+import {useNavigate} from "react-router-dom";
 
 const amenityIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   'WiFi': Wifi,
@@ -57,6 +58,8 @@ export const FlatDetailsModal = ({ flat, open, onOpenChange }: FlatDetailsModalP
   const [loadingPersonality, setLoadingPersonality] = useState(true);
   const { toast } = useToast();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const currentUser = auth.getUser();
+  const navigate = useNavigate();
 
   const images = flat.imageUrls.length > 0 ? flat.imageUrls : [
     'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600',
@@ -107,7 +110,7 @@ export const FlatDetailsModal = ({ flat, open, onOpenChange }: FlatDetailsModalP
       title: 'Starting chat',
       description: `Opening chat with ${flat.postedBy?.name || flat.postedByEmail}`,
     });
-    // Chat functionality would be implemented here
+    navigate(`/chat/${flat.id}/${currentUser?.id}`);
   };
 
   const handleInterest = () => {

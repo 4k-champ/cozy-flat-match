@@ -46,14 +46,16 @@ export const FlatCard = ({ flat, matchPercentage, onViewDetails, viewMode = 'gri
   const { toast } = useToast();
   const { isInWishlist, toggleWishlist, loading } = useWishlist();
   const navigate = useNavigate();
+  const currentUser = auth.getUser();
 
-  const handleChat = () => {
+
+    const handleChat = () => {
     if (!auth.isAuthenticated()) {
       setShowLoginModal(true);
       return;
     }
 
-    navigate(`/chat/${flat.id}`);
+    navigate(`/chat/${flat.id}/${currentUser?.id}`);
   };
 
   const handleLike = () => {
