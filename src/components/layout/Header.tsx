@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { User, LogOut, Settings, Home, Heart, Bell } from 'lucide-react';
+import { User, LogOut, Settings, Home, Heart, Bell, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -109,6 +109,12 @@ export const Header = () => {
                     <Link to="/my-flats" className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
                       My Flats
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/chats" className="cursor-pointer">
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      My Chats
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
