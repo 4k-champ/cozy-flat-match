@@ -366,7 +366,7 @@ const Chat = () => {
                           : 'bg-muted text-foreground'
                       }`}
                     >
-                      <p className="text-sm">{message.content}</p>
+                      <p className="text-sm break-words overflow-wrap">{message.content}</p>
                       <div className={`flex items-center justify-end gap-1 mt-1 ${
                         isOwnMessage ? 'text-primary-foreground/70' : 'text-muted-foreground'
                       }`}>
